@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String   @id @unique @default(uuid())
+  username String   @unique
+  name     String
+  profile  Profile?
+
+  auth_session Session[]
+  key          Key[]
+  post         Post[]
+  comment      Comment[]
+
+  createdAt DateTime @default(now())
+
+  @@index([id])
+}
+
+model Profile {
+  id      String @id @default(uuid())
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String @unique
+  Image   Image  @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  imageId String @unique
+}
+
+model Image {
+  id        String   @id @unique @default(uuid())
+  fileName  String
+  highRes   String
+  thumbnail String
+  profile   Profile?
+  post_id   String?  @unique
+  post      Post?    @relation(references: [id], fields: [post_id], onDelete: Cascade)
+}
+
+model Session {
+  id             String @id @unique
+  user_id        String
+  active_expires BigInt
+  idle_expires   BigInt
+  user           User   @relation(references: [id], fields: [user_id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model Key {
+  id              String  @id @unique
+  hashed_password String?
+  user_id         String
+  user            User    @relation(references: [id], fields: [user_id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model Post {
+  id        String    @id @unique @default(uuid())
+  article   String?
+  user_id   String
+  user      User      @relation(references: [id], fields: [user_id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  comment   Comment[]
+  image     Image?
+  edited_at DateTime  @updatedAt
+
+  @@index([id])
+}
+
+model Comment {
+  id           Int      @id @default(autoincrement())
+  user_id      String
+  post_id      String
+  comment_body String
+  createdAt    DateTime @default(now())
+  editedAt     DateTime @updatedAt
+
+  user User @relation(references: [id], fields: [user_id], onDelete: Cascade)
+  post Post @relation(references: [id], fields: [post_id], onDelete: Cascade)
+
+  @@index([id])
+}
